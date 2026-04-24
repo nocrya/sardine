@@ -1,0 +1,35 @@
+name: sardine
+description: Sardine 语音聊天社区 - Flutter 客户端
+publish_to: "none"
+version: 0.1.0+1
+
+environment:
+  sdk: ">=3.0.0 <4.0.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  cupertino_icons: ^1.0.8
+
+  # 状态与依赖注入
+  flutter_bloc: ^9.0.0
+  get_it: ^8.0.0
+  equatable: ^2.0.7
+
+  # 网络
+  dio: ^5.7.0
+  shared_preferences: ^2.3.2
+
+  # 实时与语音（LiveKit 客户端；版本随上游更新）
+  livekit_client: ^2.0.0
+
+  # 常用
+  intl: ^0.20.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^4.0.0
+
+flutter:
+  uses-material-design: true

@@ -1,0 +1,115 @@
+# --- General ---
+.DS_Store
+Thumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+ehthumbs.db
+*.log
+*.tmp
+*.temp
+*.swp
+*.orig
+*~
+*.stackdump
+*.lnk
+
+# IDE / editors (团队共享的 VS Code 配置见下方例外)
+.idea/
+*.iml
+*.ipr
+*.iws
+.fleet/
+*.code-workspace
+
+# VS Code：默认忽略个人设置；允许提交 launch / tasks / extensions 建议
+.vscode/*
+!.vscode/extensions.json
+!.vscode/launch.json
+!.vscode/tasks.json
+
+# 密钥与本地环境（示例文件用 ! 保留）
+.env
+.env.*
+!.env.example
+*.pem
+*.p12
+*.pfx
+
+# --- Go (backend) ---
+bin/
+build/
+dist/
+*.exe
+*.exe~
+*.test
+*.out
+vendor/
+coverage.out
+coverage.html
+*.coverprofile
+*.pprof
+go.work
+go.work.sum
+*.cgo1.go
+*.cgo2.c
+_cgo_*.c
+_cgo_*.h
+_cgo_*.o
+__debug_bin
+**/debug.test
+
+# 本地数据库文件（开发用）
+*.db
+*.sqlite
+*.sqlite3
+
+# --- Flutter & Dart (frontend) ---
+**/.dart_tool/
+**/.packages
+**/build/
+**/.flutter-plugins
+**/.flutter-plugins-dependencies
+**/.pub-cache/
+**/.pub/
+**/doc/api/
+**/coverage/
+**/app.*.symbols
+**/app.*.map.json
+
+# 应用型项目建议提交 `pubspec.lock`；纯库可改为忽略
+# **/pubspec.lock
+
+# Android（wrapper 脚本与 jar 应纳入版本控制，勿在此忽略）
+**/android/.gradle/
+**/android/captures/
+**/android/local.properties
+**/android/**/GeneratedPluginRegistrant.java
+**/android/.cxx/
+**/.android/
+
+# iOS / CocoaPods
+**/ios/Pods/
+**/ios/.symlinks/
+**/ios/**/xcuserdata/
+**/ios/Flutter/ephemeral/
+**/ios/.generated/
+
+# macOS
+.AppleDouble
+.LSOverride
+**/.DocumentRevisions-V100
+**/.fseventsd
+**/.Spotlight-V100
+**/.Trashes
+**/._*
+
+# Windows（Flutter Windows 构建产物在 build/；平台目录另有 .gitignore）
+**/windows/flutter/ephemeral/
+
+# Linux
+**/linux/flutter/ephemeral/
+
+# --- Misc ---
+node_modules/
+.svn/
+.hg/
