@@ -1,0 +1,12 @@
+# 本地 Docker：收窄 RTC UDP 范围，与 compose 中映射的端口一致。
+# 密钥需与 backend/.env 中 SARDINE_LIVEKIT_* 一致。
+port: 7880
+
+keys:
+  devkey: secret
+
+rtc:
+  tcp_port: 7881
+  port_range_start: 50100
+  port_range_end: 50200
+  use_external_ip: false

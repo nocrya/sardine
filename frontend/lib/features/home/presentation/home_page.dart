@@ -20,6 +20,11 @@ class HomePage extends StatelessWidget {
         route: AppRouter.server,
       ),
       (
+        title: 'Direct Messages',
+        subtitle: '最小可用私聊会话和消息列表',
+        route: AppRouter.directMessage,
+      ),
+      (
         title: 'Voice Lab',
         subtitle: '后续承载 LiveKit 房间和语音状态面板',
         route: AppRouter.voice,

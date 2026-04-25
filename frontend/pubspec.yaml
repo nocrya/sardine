@@ -19,6 +19,7 @@ dependencies:
   # 网络
   dio: ^5.7.0
   shared_preferences: ^2.3.2
+  web_socket_channel: ^3.0.1
 
   # 实时与语音（LiveKit 客户端；版本随上游更新）
   livekit_client: ^2.0.0

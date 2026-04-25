@@ -32,6 +32,14 @@ type AuthConfig struct {
 	BootstrapAutoMigrate bool
 }
 
+// LiveKitConfig 聚合 LiveKit 接入相关配置。
+type LiveKitConfig struct {
+	URL       string
+	APIKey    string
+	APISecret string
+	TokenTTL  time.Duration
+}
+
 // AppConfig 聚合运行时配置。
 type AppConfig struct {
 	Env      string
@@ -39,6 +47,7 @@ type AppConfig struct {
 	Database DatabaseConfig
 	CORS     CORSConfig
 	Auth     AuthConfig
+	LiveKit  LiveKitConfig
 }
 
 // Load 从环境读取配置。支持的环境变量形如 SARDINE_HTTP_ADDR、SARDINE_DB_DSN。
@@ -61,6 +70,10 @@ func Load() (*AppConfig, error) {
 	v.SetDefault("AUTH_ACCESS_TOKEN_TTL", "24h")
 	v.SetDefault("AUTH_BCRYPT_COST", 12)
 	v.SetDefault("AUTH_BOOTSTRAP_AUTO_MIGRATE", true)
+	v.SetDefault("LIVEKIT_URL", "ws://localhost:7880")
+	v.SetDefault("LIVEKIT_API_KEY", "")
+	v.SetDefault("LIVEKIT_API_SECRET", "")
+	v.SetDefault("LIVEKIT_TOKEN_TTL", "1h")
 
 	return &AppConfig{
 		Env:      v.GetString("env"),
@@ -79,6 +92,12 @@ func Load() (*AppConfig, error) {
 			AccessTokenTTL:       v.GetDuration("auth_access_token_ttl"),
 			BcryptCost:           v.GetInt("auth_bcrypt_cost"),
 			BootstrapAutoMigrate: v.GetBool("auth_bootstrap_auto_migrate"),
+		},
+		LiveKit: LiveKitConfig{
+			URL:       v.GetString("livekit_url"),
+			APIKey:    v.GetString("livekit_api_key"),
+			APISecret: v.GetString("livekit_api_secret"),
+			TokenTTL:  v.GetDuration("livekit_token_ttl"),
 		},
 	}, nil
 }

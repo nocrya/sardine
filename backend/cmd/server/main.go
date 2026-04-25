@@ -4,6 +4,7 @@ package main
 import (
 	"log"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -23,6 +24,7 @@ func main() {
 	if err != nil {
 		log.Fatalf("bootstrap: %v", err)
 	}
+	go application.Hub.Run()
 	defer func() {
 		if err := application.Close(); err != nil {
 			log.Printf("shutdown: %v", err)
@@ -30,7 +32,8 @@ func main() {
 	}()
 
 	router := gin.New()
-	router.Use(gin.Logger(), gin.Recovery(), middleware.CORS(cfg.CORS.AllowedOrigins))
+	devCORS := strings.EqualFold(cfg.Env, "development")
+	router.Use(gin.Logger(), gin.Recovery(), middleware.CORS(cfg.CORS.AllowedOrigins, devCORS))
 	handler.RegisterRoutes(router, application)
 
 	addr := cfg.HTTPAddr

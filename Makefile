@@ -7,7 +7,7 @@ help:
 	@echo "  make test         - 运行前后端测试"
 	@echo "  make fmt-backend  - go fmt ./..."
 	@echo "  make fmt-frontend - dart format ."
-	@echo "  make docker-up    - 后台启动 PostgreSQL (docker compose)"
+	@echo "  make docker-up    - 后台启动 PostgreSQL + LiveKit (docker compose)"
 	@echo "  make docker-down  - 停止并移除容器（保留卷）"
 
 run-backend:
@@ -27,7 +27,7 @@ fmt-frontend:
 	cd frontend && dart format lib test
 
 docker-up:
-	docker compose up -d postgres
+	docker compose up -d postgres livekit
 
 docker-down:
 	docker compose down

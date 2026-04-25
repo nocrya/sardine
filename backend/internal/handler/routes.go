@@ -8,14 +8,14 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/nocrya/sardine/internal/app"
 	"github.com/nocrya/sardine/internal/middleware"
-	"github.com/nocrya/sardine/internal/websocket"
 )
 
 // RegisterRoutes 在路由引擎上注册当前版本 API 与健康检查等路由。
 func RegisterRoutes(r *gin.Engine, application *app.App) {
-	hub := websocket.NewHub()
-	go hub.Run() // 占位：后续在应用生命周期中管理
 	authHandler := NewAuthHandler(application)
+	serverHandler := NewServerHandler(application)
+	directMessageHandler := NewDirectMessageHandler(application)
+	websocketHandler := NewWebSocketHandler(application)
 
 	r.GET("/healthz", func(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{"status": "ok"})
@@ -44,10 +44,30 @@ func RegisterRoutes(r *gin.Engine, application *app.App) {
 	api.POST("/auth/register", authHandler.Register)
 	api.POST("/auth/login", authHandler.Login)
 	api.GET("/me", middleware.RequireAuth(application.AuthService), authHandler.Me)
+	authed := api.Group("/")
+	authed.Use(middleware.RequireAuth(application.AuthService))
+	authed.POST("/invites/join", serverHandler.JoinByInviteCode)
+	authed.GET("/servers", serverHandler.ListServers)
+	authed.POST("/servers", serverHandler.CreateServer)
+	authed.POST("/servers/:serverId/leave", serverHandler.LeaveServer)
+	authed.GET("/servers/:serverId/members", serverHandler.ListMembers)
+	authed.POST("/servers/:serverId/invites", serverHandler.InviteMember)
+	authed.POST("/servers/:serverId/invite-links", serverHandler.CreateInviteLink)
+	authed.POST("/servers/:serverId/transfer-ownership", serverHandler.TransferOwnership)
+	authed.PATCH("/servers/:serverId/members/:memberId", serverHandler.UpdateMemberRole)
+	authed.DELETE("/servers/:serverId/members/:memberId", serverHandler.RemoveMember)
+	authed.GET("/servers/:serverId/channels", serverHandler.ListChannels)
+	authed.POST("/servers/:serverId/channels", serverHandler.CreateChannel)
+	authed.GET("/channels/:channelId/messages", serverHandler.ListMessages)
+	authed.POST("/channels/:channelId/messages", serverHandler.CreateMessage)
+	authed.POST("/channels/:channelId/read", serverHandler.MarkChannelRead)
+	authed.POST("/channels/:channelId/voice/join", serverHandler.JoinVoiceChannel)
+	authed.GET("/direct-conversations", directMessageHandler.ListConversations)
+	authed.POST("/direct-conversations", directMessageHandler.CreateConversation)
+	authed.GET("/direct-conversations/:conversationId/messages", directMessageHandler.ListMessages)
+	authed.POST("/direct-conversations/:conversationId/messages", directMessageHandler.CreateMessage)
 
-	r.GET("/ws", func(c *gin.Context) {
-		c.String(http.StatusNotImplemented, "websocket: use Upgrade handler")
-	})
+	r.GET("/ws", websocketHandler.Serve)
 }
 
 func pingDB(db *sql.DB) error {
