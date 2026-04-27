@@ -440,6 +440,56 @@ LIMIT 1;
 	return &invite, nil
 }
 
+func (r *ServerRepository) GetInvitePreview(ctx context.Context, code string) (*model.ServerInvitePreview, error) {
+	if r.db == nil {
+		return nil, errors.New("postgres is not configured")
+	}
+
+	const query = `
+SELECT
+  si.code,
+  si.server_id,
+  s.name,
+  s.description,
+  si.role,
+  si.use_count,
+  si.max_uses,
+  (
+    SELECT COUNT(*)
+    FROM server_members sm
+    WHERE sm.server_id = s.id
+  ) AS member_count,
+  (
+    SELECT COUNT(*)
+    FROM channels ch
+    WHERE ch.server_id = s.id
+  ) AS channel_count
+FROM server_invites si
+INNER JOIN servers s ON s.id = si.server_id
+WHERE si.code = $1
+LIMIT 1;
+`
+
+	var preview model.ServerInvitePreview
+	if err := r.db.QueryRowContext(ctx, query, strings.ToUpper(strings.TrimSpace(code))).Scan(
+		&preview.Code,
+		&preview.ServerID,
+		&preview.ServerName,
+		&preview.ServerDescription,
+		&preview.Role,
+		&preview.UseCount,
+		&preview.MaxUses,
+		&preview.MemberCount,
+		&preview.ChannelCount,
+	); err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, ErrInviteNotFound
+		}
+		return nil, err
+	}
+	return &preview, nil
+}
+
 func (r *ServerRepository) ConsumeInvite(ctx context.Context, tx *sql.Tx, code string) error {
 	const query = `
 UPDATE server_invites

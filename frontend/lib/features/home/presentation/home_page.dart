@@ -20,6 +20,11 @@ class HomePage extends StatelessWidget {
         route: AppRouter.server,
       ),
       (
+        title: 'Invite Landing',
+        subtitle: '演示 /invite/<code> 预览和加入流程',
+        route: AppRouter.invite,
+      ),
+      (
         title: 'Direct Messages',
         subtitle: '最小可用私聊会话和消息列表',
         route: AppRouter.directMessage,

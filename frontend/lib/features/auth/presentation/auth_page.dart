@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:sardine/core/config/app_config.dart';
 import 'package:sardine/core/di/dependency_injection.dart';
+import 'package:sardine/core/router/app_router.dart';
 import 'package:sardine/features/auth/presentation/auth_cubit.dart';
 import 'package:sardine/shared/widgets/app_gap.dart';
 
@@ -42,6 +43,7 @@ class _AuthViewState extends State<_AuthView> {
 
   @override
   Widget build(BuildContext context) {
+    final inviteCode = ModalRoute.of(context)?.settings.arguments as String?;
     return Scaffold(
       appBar: AppBar(title: const Text('Authentication')),
       body: BlocBuilder<AuthCubit, AuthViewState>(
@@ -68,6 +70,15 @@ class _AuthViewState extends State<_AuthView> {
                   onPressed: () => context.read<AuthCubit>().logout(),
                   child: const Text('Logout'),
                 ),
+                if (inviteCode != null && inviteCode.trim().isNotEmpty) ...[
+                  const AppGap.v(height: 12),
+                  OutlinedButton(
+                    onPressed: () => Navigator.of(context).pushReplacementNamed(
+                      AppRouter.invitePath(inviteCode),
+                    ),
+                    child: const Text('Continue to invite'),
+                  ),
+                ],
               ] else ...[
                 Text(
                   _registerMode ? 'Create account' : 'Sign in',

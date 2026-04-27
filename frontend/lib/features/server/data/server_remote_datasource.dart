@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart';
 import 'package:sardine/core/di/dependency_injection.dart';
 import 'package:sardine/features/auth/data/auth_remote_datasource.dart';
+import 'package:sardine/features/invite/data/invite_models.dart';
 import 'package:sardine/features/server/data/server_models.dart';
 
 class ServerRemoteDataSource {
@@ -132,6 +133,15 @@ class ServerRemoteDataSource {
       '/api/v1/invites/join',
       data: {'code': code},
       options: _authorizedOptions(),
+    );
+  }
+
+  Future<InvitePreview> previewInvite(String code) async {
+    final response = await _dio.get<Map<String, dynamic>>(
+      '/api/v1/invites/$code',
+    );
+    return InvitePreview.fromJson(
+      response.data!['invite'] as Map<String, dynamic>,
     );
   }
 

@@ -27,92 +27,81 @@ class WorkspaceRealtimeService {
 
   final AuthRemoteDataSource _authRemoteDataSource;
   final _controller = StreamController<WorkspaceRealtimeEvent>.broadcast();
+  static const Duration _reconnectBaseDelay = Duration(seconds: 1);
+  static const Duration _reconnectMaxDelay = Duration(seconds: 8);
 
   WebSocketChannel? _channel;
   StreamSubscription<dynamic>? _subscription;
+  Timer? _reconnectTimer;
+  Future<void>? _connectFuture;
+  int _reconnectAttempt = 0;
+  bool _manualDisconnect = false;
   int? _subscribedChannelId;
   int? _subscribedDirectConversationId;
+  int? _serverPresenceId;
 
   Stream<WorkspaceRealtimeEvent> get events => _controller.stream;
 
   Future<void> connect() async {
-    if (_channel != null) {
+    if (_channel != null || _connectFuture != null) {
+      await _connectFuture;
       return;
     }
 
-    final session = _authRemoteDataSource.loadSession();
-    final token = session?.accessToken;
-    if (token == null || token.isEmpty) {
-      return;
+    _manualDisconnect = false;
+    _connectFuture = _openSocket();
+    try {
+      await _connectFuture;
+    } finally {
+      _connectFuture = null;
     }
-
-    final channel = WebSocketChannel.connect(AppConstants.websocketUri(token));
-    _channel = channel;
-    _subscription = channel.stream.listen(
-      (data) {
-        if (data is! String) {
-          return;
-        }
-        final decoded = jsonDecode(data) as Map<String, dynamic>;
-        _controller.add(WorkspaceRealtimeEvent.fromJson(decoded));
-      },
-      onDone: _resetSocket,
-      onError: (_) => _resetSocket(),
-    );
   }
 
   Future<void> subscribeToChannel(int channelId) async {
+    final previousChannelId = _subscribedChannelId;
+    _subscribedChannelId = channelId;
     await connect();
     final channel = _channel;
     if (channel == null) {
       return;
     }
 
-    if (_subscribedChannelId != null && _subscribedChannelId != channelId) {
+    if (previousChannelId != null && previousChannelId != channelId) {
       channel.sink.add(
         jsonEncode({
           'type': 'unsubscribe',
-          'channel_id': _subscribedChannelId,
+          'channel_id': previousChannelId,
         }),
       );
     }
 
-    _subscribedChannelId = channelId;
-    channel.sink.add(
-      jsonEncode({
-        'type': 'subscribe',
-        'channel_id': channelId,
-      }),
-    );
+    _sendCommand('subscribe', channelId: channelId);
   }
 
   Future<void> subscribeToDirectConversation(int conversationId) async {
+    final previousConversationId = _subscribedDirectConversationId;
+    _subscribedDirectConversationId = conversationId;
     await connect();
     final channel = _channel;
     if (channel == null) {
       return;
     }
 
-    if (_subscribedDirectConversationId != null &&
-        _subscribedDirectConversationId != conversationId) {
+    if (previousConversationId != null &&
+        previousConversationId != conversationId) {
       channel.sink.add(
         jsonEncode({
           'type': 'direct.unsubscribe',
-          'conversation_id': _subscribedDirectConversationId,
+          'conversation_id': previousConversationId,
         }),
       );
     }
 
-    _subscribedDirectConversationId = conversationId;
-    channel.sink.add(
-      jsonEncode({
-        'type': 'direct.subscribe',
-        'conversation_id': conversationId,
-      }),
-    );
+    _sendCommand('direct.subscribe', conversationId: conversationId);
   }
 
   void syncServerPresence(int serverId) {
+    _serverPresenceId = serverId;
     _sendCommand('presence.sync', serverId: serverId);
   }
 
@@ -141,16 +130,98 @@ class WorkspaceRealtimeService {
   }
 
   Future<void> disconnect() async {
+    _manualDisconnect = true;
+    _reconnectTimer?.cancel();
+    _reconnectTimer = null;
     await _subscription?.cancel();
     await _channel?.sink.close();
-    _resetSocket();
+    _resetSocket(clearDesiredState: true);
   }
 
-  void _resetSocket() {
+  Future<void> _openSocket() async {
+    final session = _authRemoteDataSource.loadSession();
+    final token = session?.accessToken;
+    if (token == null || token.isEmpty) {
+      return;
+    }
+
+    _reconnectTimer?.cancel();
+    _reconnectTimer = null;
+
+    final channel = WebSocketChannel.connect(AppConstants.websocketUri(token));
+    _channel = channel;
+    _subscription = channel.stream.listen(
+      (data) {
+        if (data is! String) {
+          return;
+        }
+        _reconnectAttempt = 0;
+        final decoded = jsonDecode(data) as Map<String, dynamic>;
+        _controller.add(WorkspaceRealtimeEvent.fromJson(decoded));
+      },
+      onDone: _handleSocketClosed,
+      onError: (_) => _handleSocketClosed(),
+    );
+
+    _restoreDesiredSubscriptions();
+  }
+
+  void _handleSocketClosed() {
+    final shouldReconnect = !_manualDisconnect;
+    _resetSocket(clearDesiredState: false);
+    if (shouldReconnect) {
+      _scheduleReconnect();
+    }
+  }
+
+  void _resetSocket({required bool clearDesiredState}) {
     _channel = null;
     _subscription = null;
-    _subscribedChannelId = null;
-    _subscribedDirectConversationId = null;
+    if (clearDesiredState) {
+      _subscribedChannelId = null;
+      _subscribedDirectConversationId = null;
+      _serverPresenceId = null;
+    }
+  }
+
+  void _scheduleReconnect() {
+    if (_reconnectTimer != null || _connectFuture != null) {
+      return;
+    }
+    final session = _authRemoteDataSource.loadSession();
+    final token = session?.accessToken;
+    if (token == null || token.isEmpty) {
+      return;
+    }
+
+    final delaySeconds = 1 << (_reconnectAttempt.clamp(0, 3));
+    final delay = Duration(
+      seconds: delaySeconds.clamp(
+        _reconnectBaseDelay.inSeconds,
+        _reconnectMaxDelay.inSeconds,
+      ),
+    );
+    _reconnectAttempt += 1;
+
+    _reconnectTimer = Timer(delay, () {
+      _reconnectTimer = null;
+      connect();
+    });
+  }
+
+  void _restoreDesiredSubscriptions() {
+    if (_serverPresenceId != null) {
+      _sendCommand('presence.sync', serverId: _serverPresenceId);
+    }
+    if (_subscribedChannelId != null) {
+      _sendCommand('subscribe', channelId: _subscribedChannelId);
+    }
+    if (_subscribedDirectConversationId != null) {
+      _sendCommand(
+        'direct.subscribe',
+        conversationId: _subscribedDirectConversationId,
+      );
+    }
   }
 
   void _sendCommand(

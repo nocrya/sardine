@@ -54,6 +54,20 @@ type ServerInvite struct {
 	InviteLink string     `json:"invite_link"`
 }
 
+type ServerInvitePreview struct {
+	Code              string `json:"code"`
+	ServerID          int64  `json:"server_id"`
+	ServerName        string `json:"server_name"`
+	ServerDescription string `json:"server_description"`
+	Role              string `json:"role"`
+	UseCount          int64  `json:"use_count"`
+	MaxUses           int64  `json:"max_uses"`
+	MemberCount       int64  `json:"member_count"`
+	ChannelCount      int64  `json:"channel_count"`
+	Expired           bool   `json:"expired"`
+	InviteLink        string `json:"invite_link"`
+}
+
 type VoiceJoinSession struct {
 	ChannelID           int64  `json:"channel_id"`
 	RoomName            string `json:"room_name"`

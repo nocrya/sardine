@@ -98,6 +98,10 @@ type JoinServerByInviteInput struct {
 	Code   string
 }
 
+type InvitePreviewInput struct {
+	Code string
+}
+
 func NewServerService(
 	servers *repository.ServerRepository,
 	users *repository.UserRepository,
@@ -412,6 +416,26 @@ func (s *ServerService) CreateInviteLink(ctx context.Context, input CreateInvite
 
 	invite.InviteLink = "/invite/" + invite.Code
 	return invite, nil
+}
+
+func (s *ServerService) PreviewInvite(ctx context.Context, input InvitePreviewInput) (*model.ServerInvitePreview, error) {
+	code := strings.ToUpper(strings.TrimSpace(input.Code))
+	if code == "" {
+		return nil, ErrInvalidInviteCode
+	}
+
+	invite, err := s.servers.FindInviteByCode(ctx, code)
+	if err != nil {
+		return nil, err
+	}
+
+	preview, err := s.servers.GetInvitePreview(ctx, code)
+	if err != nil {
+		return nil, err
+	}
+	preview.Expired = repository.InviteExpired(invite, time.Now().UTC())
+	preview.InviteLink = "/invite/" + preview.Code
+	return preview, nil
 }
 
 func (s *ServerService) JoinServerByInvite(ctx context.Context, input JoinServerByInviteInput) (*model.Server, []model.Channel, error) {

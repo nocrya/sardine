@@ -41,6 +41,7 @@ func RegisterRoutes(r *gin.Engine, application *app.App) {
 			},
 		})
 	})
+	api.GET("/invites/:code", serverHandler.PreviewInvite)
 	api.POST("/auth/register", authHandler.Register)
 	api.POST("/auth/login", authHandler.Login)
 	api.GET("/me", middleware.RequireAuth(application.AuthService), authHandler.Me)

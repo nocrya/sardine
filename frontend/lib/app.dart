@@ -15,6 +15,7 @@ class SardineApp extends StatelessWidget {
       theme: AppTheme.light,
       initialRoute: AppRouter.home,
       routes: AppRouter.routes,
+      onGenerateRoute: AppRouter.onGenerateRoute,
       builder: (context, child) {
         return Banner(
           message: AppConfig.environment,

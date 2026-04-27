@@ -392,6 +392,25 @@ func (h *ServerHandler) CreateInviteLink(c *gin.Context) {
 	c.JSON(http.StatusCreated, gin.H{"invite": invite})
 }
 
+func (h *ServerHandler) PreviewInvite(c *gin.Context) {
+	code := c.Param("code")
+	preview, err := h.app.ServerService.PreviewInvite(c.Request.Context(), service.InvitePreviewInput{
+		Code: code,
+	})
+	if err != nil {
+		switch {
+		case errors.Is(err, service.ErrInvalidInviteCode):
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		case errors.Is(err, repository.ErrInviteNotFound):
+			c.JSON(http.StatusNotFound, gin.H{"error": "invite not found"})
+		default:
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "preview invite failed"})
+		}
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"invite": preview})
+}
+
 func (h *ServerHandler) JoinByInviteCode(c *gin.Context) {
 	userID, ok := authUserID(c)
 	if !ok {
